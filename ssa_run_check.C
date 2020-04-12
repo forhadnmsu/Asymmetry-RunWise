@@ -15,6 +15,10 @@
 #include "TLatex.h"
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <cstring>
+#include "TGraph.h"
+#include "TGraphErrors.h"
 using namespace std;
 //ratio error
 
@@ -61,6 +65,12 @@ double addition_error(
 
 //////
 void ssa_run_check(){
+
+
+	//adding the relative lumi file
+	ofstream outFile;
+        outFile.open("analyzed_run_list.txt");
+
 	int limit =12737+50;
 	int event_count =0;
 	int push_back = 0;
@@ -68,8 +78,9 @@ void ssa_run_check(){
 	vector <int> run_range;
 	run_range.push_back(12737);
 	
-	vector <int> dimuon_yield_up;
-	vector <int> dimuon_yield_down;
+	vector <double> dimuon_yield_up;
+	vector <double> ratio_nu_nd;
+	vector <double> dimuon_yield_down;
 	double di_muonphiL, di_muonphiR,dimu_pt;
 	float mu_mass = .105658;
 	TFile *f = TFile::Open("nov26_datetime.root","read");
@@ -141,7 +152,7 @@ void ssa_run_check(){
 	TH1D* asym_pt = new TH1D("asym_pt","asymmetry pt",10.0, 0,2.0);
 	TH1D* target_x = new TH1D("target_x","target_x",15, 0,1.0);
 	TH1D* target_xup = new TH1D("target_xup","target_xup",6, 0,0.5);
-
+	TH1D *asymmetry_run = new TH1D("asymmetry_run","asymmetry_run", 20, -0.15, 0.15);
 	Long64_t index_good;
 
 	//	for( Int_t i=95; i<6000; i++) {
@@ -174,27 +185,133 @@ void ssa_run_check(){
 			else
 			{       push_back++;
 				summed_dimuon.push_back(event_count);
-				cout << "runN "<< runN<<"Summed dimuon push back " <<event_count<< endl;
+		//		cout << "runN: "<< runN<<" Summed dimuon push back: " <<event_count<< endl;
 				event_count =1;
 				limit += 50;
 				run_range.push_back(runN);
 			}
-		dimuon_pt->Fill(dimu_pt);	
-		targete906->Fill(tgtPos);
-		dimu_phi->Fill(di_muonphi);
+			dimuon_pt->Fill(dimu_pt);	
+			targete906->Fill(tgtPos);
+			dimu_phi->Fill(di_muonphi);
 	}
 
 	run_range.push_back(15638);
 	for (int i=0; i< summed_dimuon.size(); i++){
-	cout << " run_range "<<run_range[i]<< " summed dimuon " << summed_dimuon[i]<<endl;
+//		cout << " run_range "<<run_range[i]<< " summed dimuon " << summed_dimuon[i]<<endl;
 	}
 
+	vector <int> lumi_ratio_run;
+
 	for (int i=0; i<summed_dimuon.size(); i++){
-                 if ( i % 2 == 0){
-                         dimuon_yield_up.push_back(summed_dimuon[i]);
-                         dimuon_yield_down.push_back(summed_dimuon[i+1]);
-                 }
+		if ( i % 2 == 0){
+			dimuon_yield_up.push_back(summed_dimuon[i]);
+			dimuon_yield_down.push_back(summed_dimuon[i+1]);
+			lumi_ratio_run.push_back(run_range[i]);
+		}
+	}
+
+	
+//	cout << " spin up yield "<< " spin down yield" <<endl;
+//	for(int j=0; j< dimuon_yield_up.size(); j++)	cout << " spin up yield: "<< dimuon_yield_up[j]<< " spin down yield: " << dimuon_yield_down[j]<<endl;
+
+
+	// relative luminosty file for asymetry extractions
+	//Relative luminosity file we get it from ../lumi_counting/Lumi_summed.txt
+
+	ifstream file("Lumi_summed.txt");
+
+	if (!file)
+	{
+		cerr << "cannot read the file Lumi_summed.tsv :"
+			<< strerror(errno) << endl;
+		return -1;
+	}
+
+	vector<int> column1; // gets the  first run number  from the run range for lumi ratio  from imported Lumi_summed.txt  file.
+	vector<double> column2; // This is the luminosity ratio R that will be used as asymmetry extraction.
+	int n1;
+	double n2;
+
+	while (file >> n1 >> n2 ) {
+		column1.push_back(n1);
+		column2.push_back(n2);
+	}
+
+
+
+	for(int i=0; i< dimuon_yield_up.size(); i++){
+                        double up = dimuon_yield_up[i];
+                        double down = dimuon_yield_down[i];
+
+                      ratio_nu_nd.push_back(up/down);
+              //  cout<< "run range "<< run_range[i]  << "up "<< up << " down "<< down<< "  ratio of the up and down " << ratio_nu_nd[i]<< endl;
          }
- 	cout << " spin up yield "<< " spin down yield" <<endl;
-	for(int j=0; j< dimuon_yield_up.size(); j++)	cout << " spin up yield: "<< dimuon_yield_up[j]<< " spin down yield: " << dimuon_yield_down[j]<<endl;
+
+
+	 //now we compare the ran range that is done in this root file, spin up and down yeild range ......
+
+
+	for(int i=0; i< 32; i++){
+
+//	 cout << "column2 size " << column2[i]  << "value of column 1: " << column1[i] << "value of column 2: " <<  column2[i] << endl;
+		cout <<" reading the file "<<column1[i] << "\t" << column2[i] << " lumi run range "<<  lumi_ratio_run[i] << endl;
+	}
+	
+	for (int ii=0; ii< column2.size(); ii++){
+	
+	//	cout << " run range first run from root " <<run_range[ii] << " spinup/down ratio: " <<ratio_nu_nd[ii] << "  run range first run from imported txt file  " << column1[ii] << "  ratio of the lumi sum " << column2[ii] << endl;
+	
+	}
+
+
+	//even run wise asymmetry showing
+
+	const Int_t n = 27;
+	Double_t x[n], A[n];
+        vector <double> ee;	
+	Double_t ex[n] ={0}; 
+	Double_t eA[n] ={0}; 
+	//ratio_nu_nd this is the ratio of nu and nd
+	for (Int_t ii=0;ii<27;ii++) {
+		x[ii] = run_range[ii];
+		A[ii] = (ratio_nu_nd[ii]*(1.0/column2[ii])-1)/(ratio_nu_nd[ii]*(1.0/column2[ii])+1);
+		double asym = (ratio_nu_nd[ii]*(1.0/column2[ii])-1)/(ratio_nu_nd[ii]*(1.0/column2[ii])+1);
+		asymmetry_run->Fill(asym);              
+		 // double eNu = h1->GetBinError(ibin);
+                double eNu = sqrt(dimuon_yield_up[ii]);
+                double eNd = sqrt(dimuon_yield_down[ii]);
+              //finidng the partial derivative wrt Nu
+              
+		  double den= ((dimuon_yield_up[ii])+ (ratio_nu_nd[ii]*dimuon_yield_down[ii]))* ((dimuon_yield_up[ii])+ (ratio_nu_nd[ii]*dimuon_yield_down[ii]));
+                double numNu = 2.0*(ratio_nu_nd[ii]*dimuon_yield_down[ii]);
+                double dNu= numNu/den;
+
+                //finidng the partial derivative wrt Nd
+                double numNd = -2.0*(ratio_nu_nd[ii]*dimuon_yield_up[ii]);
+                double dNd= numNd/den;
+
+                        //finding error of N_u,Nu
+                double err_Nu = (dNu*eNu)*(dNu*eNu);
+                double err_Nd = (dNd*eNd)*(dNd*eNd);
+               double   e = sqrt(err_Nu + err_Nd);
+		ee.push_back(e); 	 	
+		eA[ii] = ee[ii];
+		cout <<" uncertainty "<< A[ii] << " error ee " << ee[ii]<<endl;
+		///end of encertainty finding/////////////////////////////
+	}
+	gStyle->SetOptFit(1);	
+	 //auto c4 = new TCanvas("c4","c4",200,10,600,400);
+	 auto ge = new TGraphErrors(27, x, A, ex, eA);	
+	 ge->SetLineColor(2);
+	 ge->SetMarkerColor(4);
+	 ge->SetMarkerStyle(21); 
+	 ge->SetTitle("Asymmetry in each Run segments");
+	 ge->Draw("AP");
+	 ge->Fit("pol0");
+	
+	/*asymmetry_run->Draw();
+	asymmetry_run->SetFillColor(kBlue-7);
+	asymmetry_run->Fit("gaus");
+	*/
+
 }
