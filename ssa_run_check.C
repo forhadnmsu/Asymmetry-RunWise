@@ -1,4 +1,11 @@
-//this macro is to study SSA
+/*this macro is to study SSA when the spinup and spin down states are consists of 50 runs each.
+Run Ranges = [First run number in the first segment - [next first run number from the next segment -1]]
+Each segment is 100 consequent run.
+Relative luminosity R = Ld/ Lu;
+L_d = total raw luminosity in the spin down segment
+L_u = total raw luminosity in the spin up segment
+*/
+
 #include <TStyle.h>
 #include <TTree.h>
 #include <TCanvas.h>
@@ -85,8 +92,8 @@ void ssa_run_check(){
 	float mu_mass = .105658;
 	TFile *f = TFile::Open("nov26_datetime.root","read");
 	TTree *Tree = (TTree*) f->Get("Tree");
-	float px1,py1,pz1,px2,py2,pz2,Tpx1,Tnx1,Tpy1,Tny1,Tpx3,Tpy3,Tnx3,Tny3,Tpx0,Tpy0,Tnx0,Tny0;
-	float tgtPos,px0,py0,e0,e1,e0_mix,e1_mix, e0_d,e1_d;
+	float px1,py1,pz1,px2,py2,pz2;
+	float tgtPos,px0,py0,e0,e1;
 	double eventID;
 	float liveProton,spillID;
 	float runN;
@@ -152,7 +159,7 @@ void ssa_run_check(){
 	TH1D* asym_pt = new TH1D("asym_pt","asymmetry pt",10.0, 0,2.0);
 	TH1D* target_x = new TH1D("target_x","target_x",15, 0,1.0);
 	TH1D* target_xup = new TH1D("target_xup","target_xup",6, 0,0.5);
-	TH1D *asymmetry_run = new TH1D("asymmetry_run","asymmetry_run", 20, -0.15, 0.15);
+	TH1D *asymmetry_run = new TH1D("asymmetry_run","asymmetry_run", 20, -0.15, 0.6);
 	Long64_t index_good;
 
 	//	for( Int_t i=95; i<6000; i++) {
@@ -207,10 +214,8 @@ void ssa_run_check(){
 			dimuon_yield_up.push_back(summed_dimuon[i]);
 			dimuon_yield_down.push_back(summed_dimuon[i+1]);
 			lumi_ratio_run.push_back(run_range[i]);
-		}
+ 		}
 	}
-
-	
 //	cout << " spin up yield "<< " spin down yield" <<endl;
 //	for(int j=0; j< dimuon_yield_up.size(); j++)	cout << " spin up yield: "<< dimuon_yield_up[j]<< " spin down yield: " << dimuon_yield_down[j]<<endl;
 
@@ -218,7 +223,7 @@ void ssa_run_check(){
 	// relative luminosty file for asymetry extractions
 	//Relative luminosity file we get it from ../lumi_counting/Lumi_summed.txt
 
-	ifstream file("Lumi_summed.txt");
+	ifstream file("Lumi_ratio.txt");
 
 	if (!file)
 	{
@@ -234,7 +239,7 @@ void ssa_run_check(){
 
 	while (file >> n1 >> n2 ) {
 		column1.push_back(n1);
-		column2.push_back(n2);
+		column2.push_back(n2); // n2 is  Ld/Lu;
 	}
 
 
@@ -244,7 +249,6 @@ void ssa_run_check(){
                         double down = dimuon_yield_down[i];
 
                       ratio_nu_nd.push_back(up/down);
-              //  cout<< "run range "<< run_range[i]  << "up "<< up << " down "<< down<< "  ratio of the up and down " << ratio_nu_nd[i]<< endl;
          }
 
 
@@ -256,62 +260,90 @@ void ssa_run_check(){
 //	 cout << "column2 size " << column2[i]  << "value of column 1: " << column1[i] << "value of column 2: " <<  column2[i] << endl;
 		cout <<" reading the file "<<column1[i] << "\t" << column2[i] << " lumi run range "<<  lumi_ratio_run[i] << endl;
 	}
-	
-	for (int ii=0; ii< column2.size(); ii++){
-	
-	//	cout << " run range first run from root " <<run_range[ii] << " spinup/down ratio: " <<ratio_nu_nd[ii] << "  run range first run from imported txt file  " << column1[ii] << "  ratio of the lumi sum " << column2[ii] << endl;
-	
-	}
-
-
+		for(int i=0; i<99; i++){
+        //outFile<< run_range[2*i] <<  " " <<column2[i] << " "<< ratio_nu_nd[i]<<endl;
+         }
 	//even run wise asymmetry showing
 
-	const Int_t n = 27;
+	const Int_t n = 29;
 	Double_t x[n], A[n];
         vector <double> ee;	
 	Double_t ex[n] ={0}; 
-	Double_t eA[n] ={0}; 
+	Double_t eA[n] ={0};
+ 
 	//ratio_nu_nd this is the ratio of nu and nd
-	for (Int_t ii=0;ii<27;ii++) {
-		x[ii] = run_range[ii];
-		A[ii] = (ratio_nu_nd[ii]*(1.0/column2[ii])-1)/(ratio_nu_nd[ii]*(1.0/column2[ii])+1);
-		double asym = (ratio_nu_nd[ii]*(1.0/column2[ii])-1)/(ratio_nu_nd[ii]*(1.0/column2[ii])+1);
-		asymmetry_run->Fill(asym);              
-		 // double eNu = h1->GetBinError(ibin);
-                double eNu = sqrt(dimuon_yield_up[ii]);
-                double eNd = sqrt(dimuon_yield_down[ii]);
-              //finidng the partial derivative wrt Nu
-              
-		  double den= ((dimuon_yield_up[ii])+ (ratio_nu_nd[ii]*dimuon_yield_down[ii]))* ((dimuon_yield_up[ii])+ (ratio_nu_nd[ii]*dimuon_yield_down[ii]));
-                double numNu = 2.0*(ratio_nu_nd[ii]*dimuon_yield_down[ii]);
-                double dNu= numNu/den;
+	for (Int_t ii=0;ii<29;ii++) {
 
-                //finidng the partial derivative wrt Nd
-                double numNd = -2.0*(ratio_nu_nd[ii]*dimuon_yield_up[ii]);
-                double dNd= numNd/den;
+
+		x[ii] = run_range[ii];
+		double asym_num = (ratio_nu_nd[ii]*column2[ii]) -1;
+		double asym_den = (ratio_nu_nd[ii]*column2[ii]) +1;
+		A[ii] = asym_num/asym_den;
+        	asymmetry_run->Fill(A[ii]);
+	      //finidng the partial derivative wrt Nu
+              
+                double delA_nu_nd_den= ((column2[ii]*dimuon_yield_up[ii]) + dimuon_yield_down[ii]) * ((column2[ii]*dimuon_yield_up[ii]) + dimuon_yield_down[ii]);
+		double delA_nu_num= (2* column2[ii]*dimuon_yield_down[ii]); 
+		double delA_nd_num= -(2* column2[ii]*dimuon_yield_up[ii]); 
+		double delA_nu = delA_nu_num/delA_nu_nd_den;
+		double delA_nd = delA_nd_num/delA_nu_nd_den;
+
 
                         //finding error of N_u,Nu
-                double err_Nu = (dNu*eNu)*(dNu*eNu);
-                double err_Nd = (dNd*eNd)*(dNd*eNd);
+                double err_Nu = (delA_nu*delA_nu * dimuon_yield_up[ii]);
+		double err_Nd = delA_nd*delA_nd  * dimuon_yield_down [ii];
                double   e = sqrt(err_Nu + err_Nd);
 		ee.push_back(e); 	 	
 		eA[ii] = ee[ii];
-		cout <<" uncertainty "<< A[ii] << " error ee " << ee[ii]<<endl;
+		cout <<" Index: " <<ii<<" asym "<< A[ii] << " error ee " << ee[ii]<<endl;
 		///end of encertainty finding/////////////////////////////
+		outFile<< A[ii] << "\t " << ee[ii] <<endl;
 	}
 	gStyle->SetOptFit(1);	
-	 //auto c4 = new TCanvas("c4","c4",200,10,600,400);
-	 auto ge = new TGraphErrors(27, x, A, ex, eA);	
-	 ge->SetLineColor(2);
-	 ge->SetMarkerColor(4);
-	 ge->SetMarkerStyle(21); 
-	 ge->SetTitle("Asymmetry in each Run segments");
-	 ge->Draw("AP");
-	 ge->Fit("pol0");
-	
-	/*asymmetry_run->Draw();
+	auto c1 = new TCanvas("c1","c1",200,10,1000,600);
+	auto ge = new TGraphErrors(29, x, A, ex, eA);	
+	ge->SetLineColor(2);
+	ge->SetMarkerColor(4);
+	ge->SetMarkerStyle(20); 
+	ge->SetTitle("Asymmetry in each Run segments");
+	ge->GetYaxis()->SetTitle("An");
+	ge->GetXaxis()->SetTitle("Run Segments Number");
+	ge->Draw("AP");
+	ge->Fit("pol0");
+	c1->SaveAs("asym.png");
+	auto c2 = new TCanvas("c2","c2",200,10,600,400);
+	asymmetry_run->Draw("e");
 	asymmetry_run->SetFillColor(kBlue-7);
+	asymmetry_run->SetMarkerStyle(20);
 	asymmetry_run->Fit("gaus");
-	*/
+
+	///
+	//
+	TCanvas *c10 = new TCanvas("c10","",200,10,500,300);
+	Double_t xx[100], yy[100],yy2[100],yy2A[100];
+	Double_t errx[100] ={0};
+	for (Int_t i=0;i<29;i++) {
+		xx[i] = i+1;
+		yy[i] = column2[i];
+		yy2[i] = ratio_nu_nd[i]*column2[i];
+		yy2A[i]= sqrt((column2[i]*column2[i]*dimuon_yield_up[i])/(dimuon_yield_down[i]*dimuon_yield_down[i]) + (column2[i]*column2[i]*dimuon_yield_up[i]*dimuon_yield_up[i])/(dimuon_yield_down[i]*dimuon_yield_down[i]*dimuon_yield_down[i]));
+	}
+
+	gStyle->SetOptFit(1);
+	auto c12 = new TCanvas("c12","c12",200,10,1000,600);
+	TMultiGraph * mg = new TMultiGraph("mg","mg");  
+	auto gr2 = new TGraphErrors(29, xx, yy2, errx, yy2A);
+	gr2->SetMarkerStyle(21);
+	gr2->SetTitle(" #frac{N_{u}}{N_{d}} #times #frac{L_{d}}{L_{u}}");
+	gr2->SetMarkerStyle(20);
+	gr2->Fit("pol0");
+	auto gr = new TGraphErrors(29, xx, yy, 0, 0);
+	gr->SetFillColor(40);
+	gr->SetTitle("#frac{L_{d}}{L_{u}}");
+	gr->Draw("AB");
+	mg->Add(gr2,"AP"); 
+	mg->Draw();
+	c12->BuildLegend();
+	return c12;
 
 }
