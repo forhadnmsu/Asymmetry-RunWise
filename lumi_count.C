@@ -1,4 +1,4 @@
-/* This file is intend to import raw data files and take the raio of fake up and down luminosity
+/* This file is intend to import raw data files and take the raio of fake down and up luminosity
  *
  */
 #include <iostream>
@@ -39,22 +39,16 @@ void lumi_count()
 		 column3.push_back(lumi);
 		 column4.push_back(sYield);
 	 }
-
-	/*
-	 for (int j =0; j<23646; j++){
-
-		 cout << column1[j] << "\t" << column2[j]<<"\t" << column3[j]<< "\t"<< column4[j]<<endl;
-	 }
-
-	*/
-	
 	 //summing the lumi over a range of runs
 	 vector<double> summed;
 	 vector <int> run_range; 
+	 double lumiup=0;
+	 double lumidown=0;
 	 int limit = column1[0]+50; ///limit
 	 double sum = 0;
 	 run_range.push_back(column1[0]);
-	 for (int i = 0; i < column3.size(); ++i)
+	 //for (int i = 0; i < column3.size(); ++i)
+	 for (int i = 0; i < 56720; ++i)
 	 {
 		 if (column1[i] <= limit)
 			 sum += column3[i];
@@ -72,16 +66,28 @@ void lumi_count()
 	 //taking the ratio of the first two elements all the time: 
 	 vector< double > lumi_ratio;  
 
+
+	for (int i=0; i<summed.size(); i++){
+		if(i % 2 == 0)out_File << run_range[i]<< "-";
+		else out_File << run_range[i+1]-1<<endl;
+
+	}
 	 for (int i=0; i<summed.size(); i++){
 		cout << "size of the run range: "<< run_range.size() << " size of summed: "<< summed.size()<< endl;
 		 if ( i % 2 == 0){
-			 double ratio = summed[i]/summed[i+1];
+			 double ratio = summed[i+1]/summed[i]; //luminosity is defined as Ld/Lu
 			 cout<< "  summed[i] : " <<  summed[i] << " summed[i+1]: "<< summed[i+1] << "ratio: "  << ratio << endl;
 			 lumi_ratio.push_back(ratio);
 			cout << "lumi_ratio: "<< ratio << "run_range: "<<run_range[i]<<endl;
-			 out_File << run_range[i] << " "<< ratio<<endl;
+			
+			lumiup += summed[i];
+			lumidown+= summed[i+1];
 		 }
+			
 	 }
+	
+
+	 cout <<" total lumi up and down: "<< lumiup << " : "<< lumidown<<endl;
 	 int n =32;
 	 Double_t x[n], y[n];
 	 for (int i =0; i< (lumi_ratio.size()-1); i++){
@@ -97,12 +103,6 @@ void lumi_count()
 	 TCanvas *c0 = new TCanvas("c10","c0"); c0->SetGrid();
 	 gr->SetFillColor(40);
 	 gr->Draw("AB");	
-
-	 gStyle->SetOptStat(111111);
-	 TCanvas *c1 = new TCanvas("c1","c1"); c1->SetGrid();
-	 ratio_of_lumi->Draw(); 
-	 ratio_of_lumi->SetFillColor(kBlue -4);
-	 c1->SaveAs("ratio_of_lumi.png");
 	 out_File.close();
 	 return 0;
 }
