@@ -90,7 +90,8 @@ TH1D * getEffHist(
 		        //finding error of N_u,Nu
                 double err_Nu = (dNu*eNu)*(dNu*eNu);
                 double err_Nd = (dNd*eNd)*(dNd*eNd);
-		 e = sqrt(err_Nu + err_Nd);  
+		// e = sqrt(err_Nu + err_Nd);  
+		e = 1.0/sqrt(c+d);
 		h->SetBinContent(ibin, r);
 		h->SetBinError(ibin, e);
 	}
