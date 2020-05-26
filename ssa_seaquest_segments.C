@@ -205,14 +205,14 @@ void ssa_seaquest_segments(){
 		proton_up++;
 	}
         else{
-	     if ((limit < runN) &&  runN <= (limit + 50)){
+	     if ((limit < runN) &&  runN <= (limit + 50)){      
 		 proton_down++;
       	     	 spindown->Fill(di_muonphi);
 		target_xdown->Fill(x_t);
 	      }
 	      else {
 
-			 limit +=100;
+			 limit +=100;            //resets the limit previous + 100 = next segment
 	 		 spinup->Fill(di_muonphi);
         	         target_xup->Fill(x_t);
 	
